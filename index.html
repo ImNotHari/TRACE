@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orbital Decay Simulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: "Poppins", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 85%;
+            max-width: 950px;
+            background: #ffffff1a;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        h1 {
+            color: #ffffff;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+        }
+
+        form {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin: 12px 0 6px;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        input {
+            width: 90%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 15px;
+            text-align: center;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            background: linear-gradient(135deg, #28a745, #1e8c3a);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            transform: scale(1.05);
+        }
+
+        #simulation-result {
+            display: none;
+            margin-top: 35px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        #final-day {
+            color: #f1f1f1;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🛰️ Orbital Decay Simulation</h1>
+
+    <!-- Parameters Form -->
+    <form id="parameters-form">
+        <label for="altitude">Initial Altitude (km):</label>
+        <input type="number" id="altitude" value="400" min="100">
+
+        <label for="mass">Satellite Mass (kg):</label>
+        <input type="number" id="mass" value="10">
+
+        <label for="cross-sectional-area">Cross-sectional Area (m²):</label>
+        <input type="number" id="cross-sectional-area" value="0.1" step="0.01">
+
+        <label for="drag-coefficient">Drag Coefficient:</label>
+        <input type="number" id="drag-coefficient" value="2.2" step="0.1">
+
+        <button type="button" onclick="runSimulation()">Run Simulation</button>
+    </form>
+
+    <!-- Simulation Results -->
+    <div id="simulation-result">
+        <h2>Simulation Results</h2>
+        <p id="final-day">Satellite reentered atmosphere after X days.</p>
+
+        <canvas id="altitudeChart" width="600" height="400"></canvas>
+    </div>
+</div>
+
+<script>
+    // Constants
+    const G = 6.67430e-11;
+    const M_EARTH = 5.972e24;
+    const R_EARTH = 6371000;
+    const RHO_0 = 1.225;
+    const H_SCALE = 8500.0;
+    const F_SOLAR = 1.0;
+    const DAY_SECONDS = 86400;
+
+    let chartInstance = null;
+
+    // Convert total days to Y/M/D
+    function convertDaysToYMD(totalDays) {
+        const years = Math.floor(totalDays / 365);
+        const months = Math.floor((totalDays % 365) / 30);
+        const days = Math.floor((totalDays % 365) % 30);
+        return `${years}y ${months}m ${days}d`;
+    }
+
+    // Run orbital decay simulation
+    function runSimulation() {
+        const altitude = parseFloat(document.getElementById('altitude').value) * 1000;
+        const mass = parseFloat(document.getElementById('mass').value);
+        const A = parseFloat(document.getElementById('cross-sectional-area').value);
+        const Cd = parseFloat(document.getElementById('drag-coefficient').value);
+
+        if (altitude < 100000) {
+            alert('Altitude must be at least 100 km');
+            return;
+        }
+
+        let h = altitude;
+        let r = R_EARTH + h;
+        let day = 0;
+
+        const days = [];
+        const altitudes = [];
+
+        while (h > 100000) {
+            let v = Math.sqrt(G * M_EARTH / r);
+            let rho = RHO_0 * Math.exp(-h / H_SCALE) * F_SOLAR;
+            let drdt = - (Cd * A * rho * r * r * v) / mass;
+
+            r += drdt * DAY_SECONDS;
+            h = r - R_EARTH;
+
+            days.push(day);
+            altitudes.push(h / 1000.0);
+
+            day++;
+            if (day > 365 * 50) break;
+        }
+
+        const formattedTime = convertDaysToYMD(day);
+        document.getElementById('simulation-result').style.display = 'block';
+        document.getElementById('final-day').innerText =
+            `🕒 Satellite reentered atmosphere after ${formattedTime} (${day} days).`;
+
+        plotChart(days, altitudes);
+    }
+
+    // Plot chart
+    function plotChart(days, altitudes) {
+        const ctx = document.getElementById('altitudeChart').getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+        
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: days,
+                datasets: [{
+                    label: 'Altitude (km)',
+                    data: altitudes,
+                    borderColor: '#00e0ff',
+                    backgroundColor: 'rgba(0, 224, 255, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.2
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Days', color: '#333' },
+                        ticks: { color: '#333' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Altitude (km)', color: '#333' },
+                        ticks: { color: '#333' },
+                        min: 100
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#333' } }
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>
