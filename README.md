@@ -4,11 +4,9 @@ Our tool estimates the lifetime and re-entry time of satellites using physics-ba
 
 What It Does
 
-    Simulates orbital decay from 120–450 km altitude.
-    
-    Allows customisation by satellite mass, area, and drag coefficient.
-    
-    Provides clear lifetime estimates and decay visualisation.
+1. Simulates orbital decay from 120–450 km altitude.
+2. Allows customisation by satellite mass, area, and drag coefficient.
+3. Provides clear lifetime estimates and decay visualisation.
 
 Why It Matters
 
