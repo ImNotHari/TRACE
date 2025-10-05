@@ -12,3 +12,7 @@ Why It Matters
 
 LEO is becoming increasingly crowded. Understanding how long satellites stay in orbit helps prevent space debris, improve mission design, and promote sustainable space operations.
 This project empowers researchers and students to model orbital lifetimes more accurately, inspiring innovation in space sustainability.
+
+The Prototype 
+The prototype is an HTML file that uses JavaScript to implement the logic as specified within the plan. A major limitation with this implementation is the approximation done during calculation; as such, after a set height, the drag force becomes too negligible to calculate meaningful differences along the gradient above 470 km altitude.
+
